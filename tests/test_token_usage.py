@@ -139,6 +139,25 @@ def test_langchain_reasoning_tokens_count_as_completion():
     assert usage["total_tokens"] == 420
 
 
+@pytest.mark.unit
+def test_langchain_reasoning_already_included_in_output_tokens_is_not_double_counted():
+    """In standard LangChain, output_tokens already includes reasoning tokens.
+
+    output_token_details is an itemized breakdown. We must not add reasoning tokens twice.
+    """
+    message = _LangChainMessage(usage_metadata={
+        "input_tokens": 100,
+        "output_tokens": 320,
+        "total_tokens": 420,
+        "output_token_details": {"reasoning": 300},
+    })
+    usage = token_usage.extract_usage(message)
+    assert usage["prompt_tokens"] == 100
+    assert usage["completion_tokens"] == 320
+    assert usage["total_tokens"] == 420
+
+
+
 # ---------------------------------------------------------------------------
 # Degradation: telemetry must never break a served request
 # ---------------------------------------------------------------------------
@@ -402,7 +421,7 @@ def test_organization_search_reports_its_usage(monkeypatch, capsys):
 
     monkeypatch.setattr(SO, "_providers", lambda: [("groq", lambda: _FakeChatModel())])
     monkeypatch.setattr(SO, "build_prompt", lambda *a: object())
-    monkeypatch.setattr(SO, "_invoke_provider", lambda llm, prompt, s, d, l, usage=None, name="": (
+    monkeypatch.setattr(SO, "_invoke_provider", lambda llm, prompt, sub, desc, loc, usage=None, name="": (
         token_usage.record(usage, message, provider=name, model="fake") and None
     ) or rows)
 
@@ -503,7 +522,7 @@ def test_classification_logs_as_well_as_returns(monkeypatch, capsys):
 
         def create(self, **kwargs):
             block = kwargs["messages"][0]["content"].split("Categories:\n")[1]
-            ids = [l.split(":")[0].strip() for l in block.splitlines() if ":" in l]
+            ids = [line.split(":")[0].strip() for line in block.splitlines() if ":" in line]
             chosen = next((i for i in ids if get_direct_children(i)), ids[0])
             payload = json.dumps({"categories": [{"category": chosen, "confidence": 0.9}]})
 

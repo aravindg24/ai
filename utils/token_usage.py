@@ -101,21 +101,29 @@ def _from_langchain(response) -> dict | None:
     """
     metadata = getattr(response, "usage_metadata", None)
     if isinstance(metadata, dict) and "input_tokens" in metadata:
-        usage = _usage(
-            metadata.get("input_tokens"),
-            metadata.get("output_tokens"),
-            metadata.get("total_tokens"),
-        )
-        # Gemini 2.5 bills thinking tokens as output but reports them apart
-        # from the visible answer, so they have to be added back or a reasoning
-        # model looks far cheaper than the invoice says.
+        input_tokens = _as_int(metadata.get("input_tokens"))
+        output_tokens = _as_int(metadata.get("output_tokens"))
+        total_tokens = _as_int(metadata.get("total_tokens"))
+
+        # In standard LangChain usage_metadata (ChatGroq, ChatGoogleGenerativeAI),
+        # `output_tokens` already includes reasoning/thinking tokens, and
+        # `output_token_details["reasoning"]` is an itemized breakdown.
+        # Adding reasoning unconditionally causes double counting.
+        # Only add reasoning if output_tokens omitted it (e.g. output_tokens
+        # was reported strictly for visible text and is less than reasoning, or
+        # total_tokens reflects reasoning while output_tokens does not).
         details = metadata.get("output_token_details")
         if isinstance(details, dict):
             reasoning = _as_int(details.get("reasoning"))
-            if reasoning and reasoning not in (usage["completion_tokens"],):
-                usage["completion_tokens"] += reasoning
-                usage["total_tokens"] += reasoning
-        return usage
+            if reasoning:
+                if output_tokens < reasoning:
+                    output_tokens += reasoning
+                    if total_tokens and total_tokens < input_tokens + output_tokens:
+                        total_tokens += reasoning
+                elif total_tokens and total_tokens >= (input_tokens + output_tokens + reasoning):
+                    output_tokens += reasoning
+
+        return _usage(input_tokens, output_tokens, total_tokens)
 
     fallback = getattr(response, "response_metadata", None)
     if isinstance(fallback, dict):

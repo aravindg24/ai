@@ -156,3 +156,8 @@ def test_constructor_failure_can_fall_through_to_another_provider(monkeypatch):
         ("groq", "groq-primary"),
         ("gemini", "gemini-final"),
     ]
+
+
+def test_legacy_groq_defaults_include_low_reasoning_effort():
+    assert client_module.GROQ_REASONING_EFFORT == "low"
+
