@@ -189,7 +189,7 @@ Three operational inputs require information from outside this repository. Inqui
 
 | Gap | Responsible Team / Leads | Current Status / Tracking |
 | :--- | :--- | :--- |
-| **Requests per User per Month** | Product & Request Teams (@srush-shah, @shivam131284, @MustakimFS) | Inquired on 28 Sep 2026. Documented with a placeholder of **1.0 request/user/month** pending user analytics. |
+| **Requests per User per Month** | Product & Request Teams  | Inquired on 28 Sep 2026. Documented with a placeholder of **1.0 request/user/month** pending user analytics. |
 | **AWS Lambda Configurations** | DevOps / AWS Cloud Administrator | Inquired on 28 Sep 2026. Deployed workflow (`deploy_aws_lambda.yml`) specifies timeout for only 1 function (`Generate Answer` at 120s) and memory for **none**. Actual memory/timeout allocations reside exclusively in the AWS Console. Issue #153 recorded that console configurations differed from documentation across all 5 functions. |
 | **Provider Account Billing Tiers** | DevOps / Account Administrator | Inquired on 28 Sep 2026. Verifying whether Groq and Gemini accounts are currently on Free or Pay-As-You-Go tiers, and whether nonprofit educational grant discounts (investigated Nov 2025) were secured. |
 
