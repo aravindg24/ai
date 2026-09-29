@@ -66,28 +66,35 @@ Tokens are measured against live model calls in `docs/metrics/token_baseline.jso
 ### Service Fallback Path Matrix
 The repository currently maintains two distinct fallback routing architectures:
 * **Hierarchical Classification (`predict_category`):** Uses the 4-tier chain introduced in PR #199 (`config/model_routing.json`):
-  $$\text{Groq 20b} \longrightarrow \text{Groq 120b} \longrightarrow \text{Groq Safeguard 20b} \longrightarrow \text{Gemini 2.5 Flash}$$
+  `Groq 20b` → `Groq 120b` → `Groq Safeguard 20b` → `Gemini 2.5 Flash`
 * **Subject, Answer, and Org Search:** Currently use the 2-tier fallback pair:
-  $$\text{Groq 20b} \longrightarrow \text{Gemini 2.5 Flash}$$
+  `Groq 20b` → `Gemini 2.5 Flash`  
   *(Consolidating these services into the unified multi-tier router is tracked as remaining work under Issue #193).*
 
 ### Cost Calculation per Help Request (Reproducible Arithmetic)
 
-**Floor Calculation (3,442 Prompt / 1,548 Completion):**
-$$\text{Prompt Cost} = 3,442 \times \frac{\$0.075}{1,000,000} = \$0.00025815$$
-$$\text{Completion Cost} = 1,548 \times \frac{\$0.30}{1,000,000} = \$0.00046440$$
-$$\mathbf{\text{Total Floor Cost (Groq Primary)}} = \$0.00025815 + \$0.00046440 = \mathbf{\$0.00072255 \approx \$0.00072}$$
+```text
+Floor Calculation (3,442 Prompt / 1,548 Completion):
+  Prompt Cost:     3,442 tokens × ($0.075 / 1,000,000) = $0.00025815
+  Completion Cost: 1,548 tokens × ($0.300 / 1,000,000) = $0.00046440
+  ------------------------------------------------------------------
+  Total Floor Cost (Groq Primary):                     = $0.00072255 ≈ $0.00072 / request
 
-**Ceiling Calculation (3,586 Prompt / 4,530 Completion):**
-$$\text{Prompt Cost} = 3,586 \times \frac{\$0.075}{1,000,000} = \$0.00026895$$
-$$\text{Completion Cost} = 4,530 \times \frac{\$0.30}{1,000,000} = \$0.00135900$$
-$$\mathbf{\text{Total Ceiling Cost (Groq Primary)}} = \$0.00026895 + \$0.00135900 = \mathbf{\$0.00162795 \approx \$0.00163}$$
+Ceiling Calculation (3,586 Prompt / 4,530 Completion):
+  Prompt Cost:     3,586 tokens × ($0.075 / 1,000,000) = $0.00026895
+  Completion Cost: 4,530 tokens × ($0.300 / 1,000,000) = $0.00135900
+  ------------------------------------------------------------------
+  Total Ceiling Cost (Groq Primary):                   = $0.00162795 ≈ $0.00163 / request
 
-**Gemini Sustained Fallback Cost (Floor Token Basis):**
-$$\text{Prompt Cost} = 3,442 \times \frac{\$0.30}{1,000,000} = \$0.00103260$$
-$$\text{Completion Cost} = 1,548 \times \frac{\$2.50}{1,000,000} = \$0.00387000$$
-$$\mathbf{\text{Total Gemini Fallback Cost (Floor)}} = \$0.00103260 + \$0.00387000 = \mathbf{\$0.00490260 \approx \$0.00490}$$
-$$\text{Nominal Rate Multiplier} = \frac{\$0.0049026}{\$0.00072255} \approx \mathbf{6.78\times}$$
+Gemini Sustained Fallback Cost (Floor Token Basis):
+  Prompt Cost:     3,442 tokens × ($0.300 / 1,000,000) = $0.00103260
+  Completion Cost: 1,548 tokens × ($2.500 / 1,000,000) = $0.00387000
+  ------------------------------------------------------------------
+  Total Gemini Fallback Cost (Floor):                  = $0.00490260 ≈ $0.00490 / request
+
+Nominal Rate Multiplier:
+  $0.00490260 / $0.00072255 ≈ 6.78x
+```
 
 > [!WARNING]
 > **Operational Failover Multiplier:** The nominal multiplier of ~6.8× applies Gemini rates to Groq token baselines. In production, Gemini 2.5 Flash bills thinking tokens as output at $2.50/M. In `token_baseline.json`, a single fallback run on `search_orgs` produced **12,004 completion tokens** (costing ~$0.030 for one call alone). Furthermore, fallback in `search_orgs` fires on **empty results** (`len(results) == 0`) as well as outages. The true operational failover multiplier is **at least 6× and up to 15×+**.
@@ -116,8 +123,10 @@ Monthly model expenditure projected across representative user volumes:
 ### 5.1 The Free-Tier Cliff
 * **Daily Token Limit:** Groq's free tier permits 200,000 tokens/day organization-wide.
 * **Effective Daily Platform Capacity:**
-  $$\text{Daily Capacity (Floor)} = \frac{200,000 \text{ tokens/day}}{4,990 \text{ tokens/req}} \approx \mathbf{40 \text{ help requests/day}}$$
-  $$\text{Daily Capacity (Ceiling)} = \frac{200,000 \text{ tokens/day}}{8,116 \text{ tokens/req}} \approx \mathbf{24 \text{ help requests/day}}$$
+  ```text
+  Daily Capacity (Floor):   200,000 tokens/day ÷ 4,990 tokens/req ≈ 40 help requests/day
+  Daily Capacity (Ceiling): 200,000 tokens/day ÷ 8,116 tokens/req ≈ 24 help requests/day
+  ```
 * **Request Quota:** 1,000 requests/day ÷ ~5.4 calls/request ≈ 185 requests/day.
 * **Finding:** The platform is **strictly token-bound, not request-bound**. It will trigger `HTTP 429` rate limit rejections after only **24 to 40 completed help requests per day**.
 * **Mitigation:** Upgrade to Groq's Pay-As-You-Go tier prior to public launch. At near-term volumes (e.g., 5,000–10,000 requests/month), total spend is **<$10.00/month**, completely eliminating the cliff.
@@ -141,9 +150,16 @@ Issue #23 proposed moving to self-hosted open models (e.g., on AWS EC2) to reduc
 * **EC2 GPU Instance (`g4dn.xlarge` - 1x NVIDIA T4, 16GB VRAM):** On-demand price is ~$0.526/hour in `us-east-1`, totaling **~$378.72/month**.
 * **Fixed Cost Nature:** The instance incurs this fee 24/7/365 regardless of request volume.
 * **Breakeven Calculation:**
-  $$\text{Breakeven (Floor: \$0.000723)} = \frac{\$378.72}{\$0.00072255} \approx \mathbf{524,143 \text{ requests/month}}$$
-  $$\text{Breakeven (Ceiling: \$0.001628)} = \frac{\$378.72}{\$0.00162795} \approx \mathbf{232,636 \text{ requests/month}}$$
-  *(Note on historical arithmetic: The original issue calculation of 854,500 requests used an older $370/mo estimate. At the exact $378.72 price and original $0.000433 rate, the quotient was 874,541).*
+  ```text
+  Breakeven Volume (Floor: $0.000723/req):
+    $378.72 / $0.00072255 ≈ 524,143 requests/month (~17,500 requests/day)
+
+  Breakeven Volume (Ceiling: $0.001628/req):
+    $378.72 / $0.00162795 ≈ 232,636 requests/month (~7,750 requests/day)
+
+  Historical Baseline Comparison ($0.000433/req):
+    $378.72 / $0.00043305 ≈ 874,541 requests/month (~29,150 requests/day)
+  ```
 * **Conclusion:** Self-hosting remains substantially more expensive than serverless API calls until platform traffic surpasses **~233,000 to ~524,000 help requests per month**. Furthermore, self-hosting introduces infrastructure management, patching, GPU cold starts, auto-scaling complexities, and high availability engineering that a non-profit volunteer engineering team should avoid.
 
 ---
