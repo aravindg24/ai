@@ -16,11 +16,11 @@ It is not on the critical path of a help request. The Request microservice owns 
 
 ### 1.3 Related Documents
 
-- [Requirements of Gen AI](Requirements-of-Gen-AI.md), on this wiki, which carries the originating P0 and P1 requirements
-- [Generative AI Life Cycle](Generative-AI-life-cycle.md), on this wiki, which records the approach taken during the 2024 planning phase
-- [GenAI Services Specification](GenAI-Services-Specification.md), on this wiki, which specifies inputs, outputs, and runtime dependencies for each service
-- [GenAI Cost Model](GenAI-Cost-Model.md), on this wiki, which records our measured token baseline, current spend, volume forecasts, and free-tier limits
-- The Use Cases document in the Docs repository wiki
+- [Requirements of Gen AI](https://github.com/saayam-for-all/ai/wiki/Requirements-of-Gen-AI), on this wiki, which carries the originating P0 and P1 requirements
+- [Generative AI Life Cycle](https://github.com/saayam-for-all/ai/wiki/Generative-AI-life-cycle), on this wiki, which records the approach taken during the 2024 planning phase
+- [GenAI Services Specification](https://github.com/saayam-for-all/ai/wiki/GenAI-Services-Specification), on this wiki, which specifies inputs, outputs, and runtime dependencies for each service
+- [GenAI Cost Model](https://github.com/saayam-for-all/ai/wiki/GenAI-Cost-Model) ([in-repo spec](https://github.com/saayam-for-all/ai/blob/dev/docs/metrics/GENAI_COST_MODEL.md)), on this wiki, which records our measured token baseline, current spend, volume forecasts, and free-tier limits
+- [The Use Cases document](https://github.com/saayam-for-all/docs/wiki/Use-Cases) in the Docs repository wiki
 - *Help Request Categories For 1.0 MVP* and *1.0 MVP Help Categories Use Cases*, maintained by the Business Analysis team
 
 ### 1.4 Requirement Traceability
@@ -32,7 +32,7 @@ Two requirements were recorded at the outset. Their current status is as follows
 | `Gen_Text_For_Volunteer` (P1) | A volunteer may request further information about a request from the request drill down page | Implemented, as Generate Answer, reached from More Information on the Request Details page |
 | `Gen_Text_When_No_Volunteer` (P0) | Where no volunteer matches a help request, generate a text response in the language the request was submitted in | Partially implemented. The generation capability exists as Generate Answer, but it is invoked by a person choosing More Information, not automatically on a failure to match a volunteer. The automatic trigger is not built |
 
-Four of the five services now in production, covering category prediction, subject generation, organisation search and emergency contacts, have no entry in the original requirements. Their requirements are stated in this document and in GenAI Services Specification, and Requirements of Gen AI needs extending to match.
+Four of the five services now in production, covering category prediction, subject generation, organisation search and emergency contacts, have no entry in the original requirements. Their requirements are stated in this document and in [GenAI Services Specification](https://github.com/saayam-for-all/ai/wiki/GenAI-Services-Specification), and [Requirements of Gen AI](https://github.com/saayam-for-all/ai/wiki/Requirements-of-Gen-AI) needs extending to match.
 
 ## Functional Requirements
 
@@ -78,7 +78,7 @@ Four of the five services now in production, covering category prediction, subje
 ### 2.7 Logging and Monitoring
 
 - Record the shape of each request payload, never its content, so that health, housing and financial detail does not enter logs.
-- Account for token usage across every model call in a request, monitoring spend and rate limits as documented in GenAI Cost Model.
+- Account for token usage across every model call in a request, monitoring spend and rate limits as documented in [GenAI Cost Model](https://github.com/saayam-for-all/ai/wiki/GenAI-Cost-Model).
 - Return errors that distinguish a client fault, a provider outage, an unavailable data store and a schema mismatch.
 
 ## Non-Functional Requirements
