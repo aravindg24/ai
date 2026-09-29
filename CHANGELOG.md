@@ -10,6 +10,29 @@ team works and reviews in.
 
 ## Unreleased
 
+### GenAI Cost Model — [#194](https://github.com/saayam-for-all/ai/issues/194)
+
+**Added**
+
+- `docs/metrics/GENAI_COST_MODEL.md` and repository wiki page `GenAI-Cost-Model.md` —
+  publishes the formal cost model with verified rates, empirical token baselines
+  from `token_baseline.json`, volume projections, free-tier limits, and self-hosting economics.
+- Cost per help request established as an empirical range:
+  **Floor of ~$0.00072** (~4,990 tokens; clean baseline with double-counting removed)
+  to **Ceiling of ~$0.00163** (8,116 tokens; benchmark mean). Sustained Gemini 2.5 Flash
+  fallback established at **at least 6.8×** (and up to 15×+ when empty-result fallback
+  triggers thinking tokens).
+- Capacity cliff documented: Groq free tier is token-bound at **24 to 40 requests/day**
+  (200k tokens/day ÷ 4,990–8,116 tokens/request), confirming that moving to Pay-As-You-Go
+  (< $10/month near-term) is critical prior to public launch.
+- Deprecation audit dated 2026-09-28: confirmed removal of retired model
+  `gemini-2.0-flash` (shut down 1 June 2026, eradicated in PR #199); confirmed active
+  production status of `openai/gpt-oss-20b`, `120b`, and `gemini-2.5-flash`; flagged
+  `openai/gpt-oss-safeguard-20b` as Preview status.
+- Self-hosting breakeven corrected to **~233,000 to ~524,000 requests/month**, proving
+  serverless API is decisively more cost-effective than dedicated GPU instances.
+- Standing monthly review agenda (every 30 days) and quarterly currency check process documented.
+
 ### Testing infrastructure — [#171](https://github.com/saayam-for-all/ai/issues/171)
 
 **Added**
