@@ -157,6 +157,45 @@ def test_langchain_reasoning_already_included_in_output_tokens_is_not_double_cou
     assert usage["total_tokens"] == 420
 
 
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "inp,out,tot,reasoning,expected_prompt,expected_completion,expected_total",
+    [
+        # Groq real: 100 / 320 / 420 / 300
+        (100, 320, 420, 300, 100, 320, 420),
+        # Gemini-via-LangChain real (20 visible + 500 thoughts): 100 / 520 / 620 / 500
+        (100, 520, 620, 500, 100, 520, 620),
+        # All reasoning, empty answer: 100 / 300 / 400 / 300
+        (100, 300, 400, 300, 100, 300, 400),
+        # Reasoning excluded, total excludes it: 100 / 20 / 120 / 300
+        (100, 20, 120, 300, 100, 320, 420),
+        # Reasoning excluded, total includes it (121 -> 126 branch): 100 / 20 / 420 / 300
+        (100, 20, 420, 300, 100, 320, 420),
+        # Excluded, output > reasoning, total includes it (elif branch line 124): 100 / 500 / 900 / 300
+        (100, 500, 900, 300, 100, 800, 900),
+        # No total reported: 100 / 20 / None / 300
+        (100, 20, None, 300, 100, 320, 420),
+    ],
+)
+def test_langchain_reasoning_edge_case_shapes(
+    inp, out, tot, reasoning, expected_prompt, expected_completion, expected_total
+):
+    """Exercise LangChain reasoning token shapes and boundary conditions."""
+    metadata = {
+        "input_tokens": inp,
+        "output_tokens": out,
+        "output_token_details": {"reasoning": reasoning},
+    }
+    if tot is not None:
+        metadata["total_tokens"] = tot
+    message = _LangChainMessage(usage_metadata=metadata)
+    usage = token_usage.extract_usage(message)
+    assert usage["prompt_tokens"] == expected_prompt
+    assert usage["completion_tokens"] == expected_completion
+    assert usage["total_tokens"] == expected_total
+
+
+
 
 # ---------------------------------------------------------------------------
 # Degradation: telemetry must never break a served request

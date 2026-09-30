@@ -112,6 +112,9 @@ def _from_langchain(response) -> dict | None:
         # Only add reasoning if output_tokens omitted it (e.g. output_tokens
         # was reported strictly for visible text and is less than reasoning, or
         # total_tokens reflects reasoning while output_tokens does not).
+        # Note: if a library were to exclude reasoning from both output_tokens
+        # and total_tokens while output_tokens > reasoning, the shape cannot be
+        # distinguished from output that already includes reasoning; no current library does this.
         details = metadata.get("output_token_details")
         if isinstance(details, dict):
             reasoning = _as_int(details.get("reasoning"))
@@ -143,7 +146,8 @@ def _from_gemini(response) -> dict | None:
     if metadata is None or not hasattr(metadata, "prompt_token_count"):
         return None
     completion = _as_int(getattr(metadata, "candidates_token_count", 0))
-    # Thinking tokens are billed as output. See the note in _from_langchain.
+    # In raw google.genai, thinking tokens are reported separately from
+    # candidates_token_count but billed as output tokens, so they are added here.
     completion += _as_int(getattr(metadata, "thoughts_token_count", 0))
     return _usage(
         getattr(metadata, "prompt_token_count", 0),
